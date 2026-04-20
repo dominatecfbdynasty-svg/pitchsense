@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CFB26 Recruiting Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body { background: #F0F0F0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; display:flex; flex-direction:column; min-height:100vh; }
+
+    /* Cards */
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.05); padding: 16px; }
+
+    /* Step label */
+    .step-label { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .step-num { background: #111; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .step-title { font-size: 13px; font-weight: 500; color: #111; }
+
+    /* Primary button */
+    .btn-primary { display: block; width: 100%; background: #CC0000; color: #fff; font-weight: 700; font-size: 14px; padding: 13px 16px; border-radius: 6px; border: none; cursor: pointer; text-align: center; transition: background 0.1s; }
+    .btn-primary:active { background: #aa0000; }
+
+    /* Secondary button */
+    .btn-secondary { display: block; width: 100%; background: #111; color: #fff; font-weight: 700; font-size: 14px; padding: 13px 16px; border-radius: 6px; border: none; cursor: pointer; text-align: center; transition: background 0.1s; }
+    .btn-secondary:active { background: #333; }
+
+    /* Motivation row */
+    .mot-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+    .mot-row.green   { background: #F7FBF0; }
+    .mot-row.red     { background: #FFF5F5; }
+    .mot-row.neutral { background: transparent; }
+    .mot-row:active  { opacity: 0.85; }
+
+    /* Status pill (visual only) */
+    .mot-pill { width: 22px; height: 18px; border-radius: 9px; border: 1px solid #ccc; background: #fff; flex-shrink: 0; pointer-events: none; }
+    .mot-pill.green   { background: #639922; border-color: #639922; }
+    .mot-pill.red     { background: #FFD9D9; border-color: #E24B4A; }
+    .mot-pill.neutral { background: #fff; border-color: #ccc; }
+
+    /* Grade badge */
+    .grade-badge { border-radius: 4px; padding: 3px 7px; font-size: 12px; font-weight: 700; flex-shrink: 0; min-width: 34px; text-align: center; }
+
+    /* Grade stepper buttons */
+    .grade-step { min-width: 44px; min-height: 28px; border-radius: 6px; border: 1px solid #ddd; background: #f8f8f8; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; padding: 4px 10px; line-height: 1; color: #444; }
+    .grade-step:active { background: #e8e8e8; }
+
+    /* Warning strip */
+    .warn-strip { border-left: 3px solid #ccc; padding: 5px 10px; }
+
+    /* Result card */
+    .result-card { background: #111; border-radius: 8px; padding: 32px 24px; text-align: center; }
+    .result-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #888; margin-bottom: 8px; }
+    .result-headline { font-size: 42px; font-weight: 900; color: #fff; line-height: 1; letter-spacing: -0.02em; margin-bottom: 10px; }
+    .result-subline { font-size: 20px; font-weight: 800; color: #CC0000; letter-spacing: -0.01em; margin-bottom: 14px; }
+    .result-note { font-size: 13px; color: #999; font-weight: 500; }
+
+    /* Spinner */
+    .spinner { border: 3px solid #ddd; border-top-color: #CC0000; border-radius: 50%; width: 26px; height: 26px; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Dealbreaker select */
+    .db-select { width: 100%; background: #fff; border: 1.5px solid #ccc; color: #111; border-radius: 6px; padding: 11px 12px; font-size: 14px; font-weight: 500; appearance: auto; }
+    .db-select:focus { outline: 2px solid #CC0000; border-color: #CC0000; }
+
+    /* Reset link */
+    .reset-link { font-size: 12px; color: #999; text-decoration: underline; background: none; border: none; cursor: pointer; }
+
+    /* Progress bar */
+    .progress-bar { display: flex; width: 100%; height: 3px; }
+    .progress-seg { flex: 1; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Header -->
+  <header style="background:#111; padding:8px 16px;" class="flex items-center gap-2">
+    <div>
+      <h1 style="font-size:22px; font-weight:600; color:#ffffff; letter-spacing:0.3px; line-height:1.2;">PitchSense</h1>
+      <p style="font-size:12px; color:#aaaaaa; font-weight:400; margin-top:2px;">Snap a photo. Get your pitch. Close the recruit.</p>
+    </div>
+  </header>
+
+  <!-- 3-step progress bar -->
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-seg" id="prog1" style="background:#888;"></div>
+    <div class="progress-seg" id="prog2" style="background:#e0e0e0;"></div>
+    <div class="progress-seg" id="prog3" style="background:#e0e0e0;"></div>
+  </div>
+
+  <main style="max-width:480px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:16px;">
+
+    <!-- Test mode bar (hidden unless localStorage testmode=true) -->
+    <div id="testModeBar" style="display:none; background:#1a1a2e; border-radius:8px; padding:12px 14px;">
+      <div style="font-size:11px; font-weight:700; color:#f0a500; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px;">⚙ Test Mode Active</div>
+      <button onclick="loadTestSway()" style="width:100%; background:#f0a500; color:#1a1a2e; font-weight:700; font-size:13px; padding:10px 14px; border-radius:6px; border:none; cursor:pointer;">
+        Test Sway Scenario
+      </button>
+    </div>
+
+    <!-- Step 1: Upload -->
+    <div class="card">
+      <div class="step-label">
+        <span class="step-num">1</span>
+        <span class="step-title">Add recruiting screenshot</span>
+      </div>
+
+      <input id="fileInput"   type="file" accept="image/*"                     class="hidden" onchange="handleFile(this.files[0])" />
+      <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden" onchange="handleFile(this.files[0])" />
+
+      <a onclick="document.getElementById('sampleLightbox').style.display='flex'; return false;" href="#" style="font-size:13px; color:#888; text-decoration:underline; display:block; margin-bottom:12px;">View example screenshot</a>
+
+      <div id="sampleLightbox" onclick="this.style.display='none'" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:999; align-items:center; justify-content:center;">
+        <img src="example-screenshot.png" style="width:90%; max-width:400px; height:auto; border-radius:8px;" />
+      </div>
+
+      <p style="font-size:14px; color:#555; margin-bottom:12px; font-weight:400;">Snap a photo of your recruit's Motivations &amp; Grades screen.</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <button onclick="document.getElementById('cameraInput').click()" class="btn-primary" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding:16px 8px;">
+          <span style="font-size:24px;">📷</span>
+          <span>Take photo</span>
+        </button>
+        <button onclick="document.getElementById('fileInput').click()" class="btn-secondary" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding:16px 8px;">
+          <span style="font-size:24px;">🖼️</span>
+          <span>Upload file</span>
+        </button>
+      </div>
+
+      <div id="previewWrap" class="hidden" style="margin-top:12px;">
+        <img id="previewImg" style="max-height:180px; width:100%; object-fit:contain; border-radius:6px; border:1px solid #eee;" />
+      </div>
+
+      <button id="analyzeBtn" onclick="analyzeImage()" class="btn-primary hidden" style="margin-top:12px;">
+        What's my move?
+      </button>
+
+      <div id="analyzeStatus" class="hidden" style="display:none; align-items:center; gap:10px; justify-content:center; padding:10px 0;">
+        <div class="spinner"></div>
+        <span id="analyzeStatusText" style="font-size:13px; color:#666; font-weight:400;">Reading motivations &amp; grades…</span>
+      </div>
+
+      <div id="analyzeError" class="hidden" style="font-size:13px; color:#c0392b; text-align:center; padding:8px 0; font-weight:400;"></div>
+
+      <div id="manualToggle" class="hidden" style="text-align:center; margin-top:8px;">
+        <button onclick="showManualEntry()" style="font-size:12px; color:#999; text-decoration:underline; background:none; border:none; cursor:pointer;">
+          Enter motivations manually instead
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Motivations -->
+    <div id="motivationsSection" class="card hidden">
+      <div class="step-label" style="justify-content:space-between; margin-bottom:0;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="step-num">2</span>
+          <span class="step-title">Motivations &amp; grades</span>
+        </div>
+        <button onclick="resetAll()" class="reset-link">Reset</button>
+      </div>
+
+      <div class="warn-strip" style="margin:12px 0 10px;">
+        <p style="font-size:13px; color:#888; font-weight:400;">Double-check the results below — the image processor isn't perfect.</p>
+      </div>
+
+      <!-- Color key row -->
+      <div style="display:flex; align-items:center; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; gap:10px; flex:1;">
+          <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#555;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#639922; display:inline-block;"></span>Matched
+          </span>
+          <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#555;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#E24B4A; display:inline-block;"></span>Missed
+          </span>
+          <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#555;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#888; display:inline-block;"></span>Unknown
+          </span>
+        </div>
+        <span style="font-size:11px; color:#aaa;">Tap pill to toggle</span>
+      </div>
+
+      <div id="motivationGrid" style="display:flex; flex-direction:column; gap:2px;"></div>
+    </div>
+
+    <!-- Step 3: Dealbreaker -->
+    <div id="dealbreakerSection" class="card hidden">
+      <div class="step-label">
+        <span class="step-num">3</span>
+        <span class="step-title">Recruit's dealbreaker</span>
+      </div>
+
+      <div id="dealbreakerSelectWrap">
+        <select id="dealbreaker" class="db-select" style="margin-bottom:8px;">
+          <option value="">— Select dealbreaker motivation —</option>
+        </select>
+        <p style="font-size:13px; color:#888; font-weight:400; margin-bottom:14px;">Always treated as green regardless of what's on screen.</p>
+      </div>
+
+      <button onclick="calculateRecommendation()" class="btn-primary">
+        Get recommendation
+      </button>
+    </div>
+
+    <!-- Result -->
+    <div id="resultSection" class="hidden"></div>
+
+  </main>
+
+  <!-- FAQ -->
+  <div style="max-width:480px; margin:0 auto; padding:0 16px 8px;">
+    <button id="faqToggle" onclick="toggleFaq()" style="width:100%; background:#fff; border:none; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.10),0 0 0 1px rgba(0,0,0,0.05); padding:14px 16px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; font-size:14px; font-weight:700; color:#111;">
+      <span>FAQ</span>
+      <span id="faqChevron" style="font-size:12px; color:#888; transition:transform 0.2s;">▼</span>
+    </button>
+    <div id="faqBody" style="display:none; background:#fff; border-radius:0 0 8px 8px; box-shadow:0 1px 4px rgba(0,0,0,0.10),0 0 0 1px rgba(0,0,0,0.05); border-top:1px solid #f0f0f0; padding:4px 0 8px;">
+
+      <div style="padding:14px 16px 10px;">
+        <p style="font-weight:700; font-size:13px; color:#111; margin:0 0 5px;">How do I use PitchSense?</p>
+        <p style="font-size:13px; color:#444; margin:0; line-height:1.5;">Take or upload a photo of your recruit's Motivations &amp; Grades screen in CFB26. PitchSense will read the green and red checkmarks, ask for your recruit's dealbreaker, and tell you exactly what recruiting action to take.</p>
+      </div>
+      <div style="height:1px; background:#f0f0f0; margin:0 16px;"></div>
+
+      <div style="padding:14px 16px 10px;">
+        <p style="font-weight:700; font-size:13px; color:#111; margin:0 0 5px;">Why isn't it reading my screenshot correctly?</p>
+        <p style="font-size:13px; color:#444; margin:0; line-height:1.5;">The image processor isn't perfect. After each scan, review the motivation toggles and grade dropdowns and correct anything that looks off before hitting 'What's My Move?'</p>
+      </div>
+      <div style="height:1px; background:#f0f0f0; margin:0 16px;"></div>
+
+      <div style="padding:14px 16px 10px;">
+        <p style="font-weight:700; font-size:13px; color:#111; margin:0 0 5px;">How do I fix wrong grades or checkmarks?</p>
+        <p style="font-size:13px; color:#444; margin:0; line-height:1.5;">Tap any motivation toggle to switch between green, red, and unknown. Tap any grade dropdown to select the correct grade. Changes are reflected instantly in the recommendation.</p>
+      </div>
+      <div style="height:1px; background:#f0f0f0; margin:0 16px;"></div>
+
+      <div style="padding:14px 16px 10px;">
+        <p style="font-weight:700; font-size:13px; color:#111; margin:0 0 5px;">What is a dealbreaker and where do I find it?</p>
+        <p style="font-size:13px; color:#444; margin:0; line-height:1.5;">A dealbreaker is one of your recruit's known motivations. You can find it on the recruit's profile screen in CFB26 in the bottom right corner window.</p>
+      </div>
+      <div style="height:1px; background:#f0f0f0; margin:0 16px;"></div>
+
+      <div style="padding:14px 16px 10px;">
+        <p style="font-weight:700; font-size:13px; color:#111; margin:0 0 5px;">What does Send the House mean?</p>
+        <p style="font-size:13px; color:#444; margin:0; line-height:1.5;">Send the House means there isn't enough information yet to identify the recruit's pitch. Keep recruiting and gathering information before committing to a specific pitch.</p>
+      </div>
+      <div style="height:1px; background:#f0f0f0; margin:0 16px;"></div>
+
+      <div style="padding:14px 16px 10px;">
+        <p style="font-weight:700; font-size:13px; color:#111; margin:0 0 5px;">Why does it say Send the House even when I think I know the pitch?</p>
+        <p style="font-size:13px; color:#444; margin:0; line-height:1.5;">Your grades may not be high enough. Each letter grade has a point value (F=1 through A+=13). If the total score across your recruit's three green motivations is under 20, Send the House is the safer play regardless of whether the pitch is identified.</p>
+      </div>
+      <div style="height:1px; background:#f0f0f0; margin:0 16px;"></div>
+
+      <div style="padding:14px 16px 10px;">
+        <p style="font-weight:700; font-size:13px; color:#111; margin:0 0 5px;">What's the difference between Hard Sell and Double Soft Sell?</p>
+        <p style="font-size:13px; color:#444; margin:0; line-height:1.5;">A Hard Sell means PitchSense has identified exactly one matching pitch and your grades are strong enough to commit. A Double Soft Sell means it's been narrowed to two possible pitches and you'll find out which one is correct the following week. For maximum impact, add an additional 10 hours by selecting DM the Player since Double Soft Sell only uses 40 recruiting hours.</p>
+      </div>
+      <div style="height:1px; background:#f0f0f0; margin:0 16px;"></div>
+
+      <div style="padding:14px 16px 10px;">
+        <p style="font-weight:700; font-size:13px; color:#111; margin:0 0 5px;">Does this work for CFB 25?</p>
+        <p style="font-size:13px; color:#444; margin:0; line-height:1.5;">No. PitchSense is built specifically for CFB26's recruiting system.</p>
+      </div>
+      <div style="height:1px; background:#f0f0f0; margin:0 16px;"></div>
+
+      <div style="padding:14px 16px 10px;">
+        <p style="font-weight:700; font-size:13px; color:#111; margin:0 0 5px;">Why does it say servers are busy?</p>
+        <p style="font-size:13px; color:#444; margin:0; line-height:1.5;">Occasionally high demand causes temporary delays. Wait a few seconds and try again.</p>
+      </div>
+      <div style="height:1px; background:#f0f0f0; margin:0 16px;"></div>
+
+      <div style="padding:14px 16px 6px;">
+        <p style="font-weight:700; font-size:13px; color:#111; margin:0 0 5px;">Want more dynasty tools and strategies?</p>
+        <p style="font-size:13px; color:#444; margin:0; line-height:1.5;">Join <a href="https://www.patreon.com/DominateCFBDynasty" target="_blank" style="color:#CC0000; font-weight:600; text-decoration:none;">Dominate CFB Dynasty on Patreon</a> for premium recruiting guides, the full tool suite, and an active community of serious dynasty players.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <footer style="text-align:center; padding:20px; font-size:11px; color:#E24B4A; font-weight:500; letter-spacing:0.5px;">
+    Powered by Dominate CFB Dynasty
+  </footer>
+
+  <script>
+    // ── Test mode ──────────────────────────────────────────────────
+    if (localStorage.getItem("testmode") === "true") {
+      document.getElementById("testModeBar").style.display = "block";
+    }
+
+    function loadTestSway() {
+      resetAll();
+
+      // Scenario: Campus Personality is the 1 valid pitch
+      // pitchGradeTotal sums ALL 3 motivations in the pitch, so all must total < 20
+      // Sway candidate: Clocked In — flip Pro Potential from red to green
+      //
+      // Campus Personality motivations: Campus Lifestyle + Playing Style + Playing Time
+      //   Campus Lifestyle C- (5) + Playing Style B- (8) + Playing Time C (6) = 19 → under 20, no Hard Sell ✓
+      //   Sway check (Clocked In greens): Playing Style (8) + Playing Time (6) = 14 → meets ≥14 threshold ✓
+      motivationState["Playing Style"]   = "green";
+      motivationState["Playing Time"]    = "green";
+      motivationState["Pro Potential"]   = "red";
+      motivationState["Coach Stability"] = "red";
+
+      motivationGrades["Playing Style"]    = "B-"; // 8pts
+      motivationGrades["Playing Time"]     = "C";  // 6pts  → Sway green total = 14
+      motivationGrades["Campus Lifestyle"] = "C-"; // 5pts  → pitch total = 19
+
+      dealbreaker = "Playing Style";
+      document.getElementById("dealbreaker").value = "Playing Style";
+
+      // Show motivations section and proceed to recommendation
+      document.getElementById("motivationsSection").classList.remove("hidden");
+      document.getElementById("dealbreakerSection").classList.remove("hidden");
+      renderMotivationGrid();
+      currentStep = 2;
+      updateProgressBar();
+      calculateRecommendation();
+    }
+
+    function toggleFaq() {
+      const body    = document.getElementById("faqBody");
+      const chevron = document.getElementById("faqChevron");
+      const open    = body.style.display === "none";
+      body.style.display    = open ? "block" : "none";
+      chevron.style.transform = open ? "rotate(180deg)" : "";
+    }
+
+    const MOTIVATIONS = [
+      "Academic Prestige", "Athletic Facilities", "Brand Exposure", "Campus Lifestyle",
+      "Championship Contender", "Coach Prestige", "Coach Stability", "Conference Prestige",
+      "Playing Style", "Playing Time", "Pro Potential", "Program Tradition",
+      "Proximity to Home", "Stadium Atmosphere"
+    ];
+
+    const PITCHES = [
+      { name: "College Experience",   motivations: ["Academic Prestige", "Campus Lifestyle", "Stadium Atmosphere"] },
+      { name: "Team Player",          motivations: ["Coach Stability", "Playing Style", "Proximity to Home"] },
+      { name: "Campus Personality",   motivations: ["Campus Lifestyle", "Playing Style", "Playing Time"] },
+      { name: "Gamer",                motivations: ["Conference Prestige", "Playing Style", "Pro Potential"] },
+      { name: "Standard Bearer",      motivations: ["Coach Prestige", "Conference Prestige", "Playing Style"] },
+      { name: "Student of the Game",  motivations: ["Academic Prestige", "Coach Prestige", "Proximity to Home"] },
+      { name: "Hometown Hero",        motivations: ["Championship Contender", "Program Tradition", "Proximity to Home"] },
+      { name: "Status Seeker",        motivations: ["Brand Exposure", "Coach Prestige", "Conference Prestige"] },
+      { name: "The Clutch",           motivations: ["Coach Stability", "Playing Style", "Playing Time"] },
+      { name: "Primetime Player",     motivations: ["Brand Exposure", "Championship Contender", "Playing Time"] },
+      { name: "Coach Connection",     motivations: ["Athletic Facilities", "Coach Prestige", "Proximity to Home"] },
+      { name: "Aspirational Goals",   motivations: ["Championship Contender", "Coach Prestige", "Conference Prestige"] },
+      { name: "House Call",           motivations: ["Brand Exposure", "Championship Contender", "Coach Prestige"] },
+      { name: "Football Influencer",  motivations: ["Brand Exposure", "Playing Time", "Pro Potential"] },
+      { name: "Clocked In",           motivations: ["Playing Style", "Playing Time", "Pro Potential"] },
+      { name: "Star Search",          motivations: ["Brand Exposure", "Playing Time", "Proximity to Home"] },
+      { name: "Grassroots",           motivations: ["Program Tradition", "Proximity to Home", "Stadium Atmosphere"] },
+      { name: "Conference Legend",    motivations: ["Championship Contender", "Conference Prestige", "Proximity to Home"] },
+      { name: "Sunday Player",        motivations: ["Championship Contender", "Conference Prestige", "Pro Potential"] },
+      { name: "Gym Rat",              motivations: ["Athletic Facilities", "Brand Exposure", "Pro Potential"] },
+    ];
+
+    const GRADE_VALUES = {
+      "F":1, "D-":2, "D":3, "D+":4, "C-":5, "C":6, "C+":7,
+      "B-":8, "B":9, "B+":10, "A-":11, "A":12, "A+":13
+    };
+    const GRADE_OPTIONS = Object.keys(GRADE_VALUES);
+
+    let motivationState  = {};
+    let motivationGrades = {};
+    let uploadedFile     = null;
+    let dealbreaker      = "";
+    let isManualMode     = false;
+    let currentStep      = 1;
+
+    MOTIVATIONS.forEach(m => { motivationState[m] = "neutral"; motivationGrades[m] = ""; });
+
+    const dbSelect = document.getElementById("dealbreaker");
+    MOTIVATIONS.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m; opt.textContent = m;
+      dbSelect.appendChild(opt);
+    });
+
+    // ── Progress bar ───────────────────────────────────────────────
+    function updateProgressBar() {
+      [1, 2, 3].forEach(step => {
+        const el = document.getElementById("prog" + step);
+        if (step < currentStep)      el.style.background = "#111";
+        else if (step === currentStep) el.style.background = "#888";
+        else                          el.style.background = "#e0e0e0";
+      });
+    }
+
+    // ── File handling ──────────────────────────────────────────────
+    function handleFile(file) {
+      if (!file) return;
+      uploadedFile = file;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.getElementById("previewImg");
+        img.src = e.target.result;
+        document.getElementById("previewWrap").classList.remove("hidden");
+        document.getElementById("analyzeBtn").classList.remove("hidden");
+        document.getElementById("manualToggle").classList.remove("hidden");
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.addEventListener("dragover", e => e.preventDefault());
+    document.addEventListener("drop", e => {
+      e.preventDefault();
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+
+    // Set this to your deployed Render URL (e.g. "https://pitchsense-server.onrender.com")
+    const BACKEND_URL = "https://pitchsense-server.onrender.com";
+
+    // ── Vision analysis ────────────────────────────────────────────
+    async function analyzeImage() {
+      if (!uploadedFile) { alert("Please upload a screenshot first."); return; }
+
+      document.getElementById("analyzeBtn").classList.add("hidden");
+      document.getElementById("manualToggle").classList.add("hidden");
+      document.getElementById("analyzeError").classList.add("hidden");
+      const statusEl   = document.getElementById("analyzeStatus");
+      const statusText = document.getElementById("analyzeStatusText");
+      statusEl.classList.remove("hidden");
+      statusEl.style.display = "flex";
+
+      try {
+        const base64 = await compressImage(uploadedFile);
+
+        const systemPrompt = `You are an expert image analysis assistant specializing in reading College Football 26 (CFB26) in-game recruiting screens. Your sole task is to extract structured data from a screenshot of the recruiting motivations panel with high accuracy.
+
+You will be given a screenshot of the recruiting motivations screen. You must identify and extract two pieces of data for each of the 14 motivations: a status (green, red, or neutral) and a letter grade (or empty string if not visible).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — READING THE STATUS ICON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Each motivation has a small icon immediately to its left or right. There are exactly two possible icons plus the absence of any icon:
+
+GREEN CHECKMARK — label as "green":
+- Appears as a checkmark (✓) shape in a bright green or lime green color
+- The icon is distinctly curved/angled like a tick mark
+- It signals that this recruit actively values or prioritizes this motivation
+- The green color is vivid and saturated, not faded or gray-green
+
+RED X MARK — label as "red":
+- Appears as an X or cross (✗) shape in a bright red or orange-red color
+- The icon has two diagonal lines crossing each other
+- It signals that this recruit does NOT care about or actively dislikes this motivation
+- The red color is vivid and warm-toned, not pink or dark maroon
+
+NO ICON / UNCLEAR — label as "neutral":
+- If there is no icon present next to the motivation
+- If the icon color is ambiguous (neither clearly green nor clearly red)
+- If the icon is partially obscured, cut off, or too small to read confidently
+- Do NOT default to "neutral" just because you are unsure between green and red — make your best determination based on shape and color. Only use "neutral" when there is genuinely no icon or the icon is completely unreadable.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — READING THE LETTER GRADE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Each motivation also displays a letter grade representing your school's rating in that category. The grade appears as one or two characters near each motivation row.
+
+VALID GRADES (complete list):
+A+, A, A−, B+, B, B−, C+, C, C−, D+, D, D−, F
+
+CRITICAL — HOW TO DISTINGUISH MODIFIED GRADES FROM PLAIN GRADES:
+
+The plus (+) and minus (−) symbols are small and appear immediately after the letter with no space. This is the most error-prone part of reading this screen. Follow these rules precisely:
+
+- A+ has a small cross/plus symbol after the A. The horizontal and vertical strokes of the + are both visible.
+- A has NO symbol after it. The grade ends with just the letter A and nothing else follows it on that row.
+- A− has a small horizontal dash/minus after the A. It is a single short horizontal line — thinner and shorter than the letter itself.
+- The same logic applies to B+, B, B−, C+, C, C−, D+, D, D−.
+
+Common mistakes to avoid:
+- Do NOT read A− as A. Look carefully for a trailing dash after the letter.
+- Do NOT read B as B+. If there is no symbol, the grade is the plain letter.
+- Do NOT read B+ as B−. A plus has a vertical stroke; a minus does not.
+- A small artifact, shadow, or compression artifact after a letter is NOT a modifier. Only report a modifier if you can clearly see its shape.
+- If you can see a letter but cannot confidently determine whether a modifier is present, return "" rather than guessing the wrong grade.
+- F has no modifier variants. It is always just "F".
+
+WHEN TO RETURN AN EMPTY GRADE (""):
+- The grade area is blank or empty for this motivation
+- The grade is partially cut off or obscured and you cannot read it fully
+- You can see a letter but cannot determine with confidence whether a + or − follows it
+- The text is too blurry or small to read clearly
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+THE 14 MOTIVATIONS (exact names required)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You must return a result for every one of these 14 motivations, in any order:
+
+1. Academic Prestige
+2. Athletic Facilities
+3. Brand Exposure
+4. Campus Lifestyle
+5. Championship Contender
+6. Coach Prestige
+7. Coach Stability
+8. Conference Prestige
+9. Playing Style
+10. Playing Time
+11. Pro Potential
+12. Program Tradition
+13. Proximity to Home
+14. Stadium Atmosphere
+
+If a motivation name is partially obscured in the screenshot, use the list above to identify it by its visible characters and the position in the list.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT FORMAT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Respond ONLY with a valid JSON object. No explanation, no markdown fences, no commentary before or after. The response must begin with { and end with }.
+
+Use exactly these key names. Status must be one of: "green", "red", "neutral". Grade must be one of the valid grades above or "".
+
+{
+  "Academic Prestige":      { "status": "green",   "grade": "B+" },
+  "Athletic Facilities":    { "status": "red",     "grade": "C"  },
+  "Brand Exposure":         { "status": "neutral", "grade": ""   },
+  "Campus Lifestyle":       { "status": "green",   "grade": "A-" },
+  "Championship Contender": { "status": "red",     "grade": "B"  },
+  "Coach Prestige":         { "status": "green",   "grade": "A"  },
+  "Coach Stability":        { "status": "neutral", "grade": ""   },
+  "Conference Prestige":    { "status": "red",     "grade": "C+" },
+  "Playing Style":          { "status": "green",   "grade": "B-" },
+  "Playing Time":           { "status": "red",     "grade": "D+" },
+  "Pro Potential":          { "status": "green",   "grade": "A+" },
+  "Program Tradition":      { "status": "neutral", "grade": ""   },
+  "Proximity to Home":      { "status": "green",   "grade": "B"  },
+  "Stadium Atmosphere":     { "status": "red",     "grade": "C-" }
+}`;
+
+        const serverResponse = await fetch(`${BACKEND_URL}/api/analyze`, {
+          method:  "POST",
+          headers: { "content-type": "application/json" },
+          body:    JSON.stringify({ image: base64, systemPrompt })
+        });
+
+        if (!serverResponse.ok) {
+          const err = await serverResponse.json();
+          throw new Error(err.error || "Server error");
+        }
+
+        const data = await serverResponse.json();
+        const usage = data.usageMetadata || {};
+        const inputTokens  = usage.promptTokenCount     || 0;
+        const outputTokens = usage.candidatesTokenCount || 0;
+        const inputCost    = (inputTokens  / 1_000_000) * 0.30;
+        const outputCost   = (outputTokens / 1_000_000) * 2.50;
+        console.log("[Gemini API]", {
+          model:         data.model,
+          inputTokens,
+          outputTokens,
+          estimatedCost: "$" + (inputCost + outputCost).toFixed(6)
+        });
+        const text = data.text;
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("Could not parse response from Gemini.");
+        const parsed = JSON.parse(jsonMatch[0]);
+
+        MOTIVATIONS.forEach(m => {
+          const entry = parsed[m];
+          if (!entry) return;
+          motivationState[m]  = (entry.status === "green" || entry.status === "red") ? entry.status : "neutral";
+          motivationGrades[m] = GRADE_VALUES[entry.grade] ? entry.grade : "";
+        });
+
+        isManualMode = false;
+        statusEl.style.display = "none";
+        statusEl.classList.add("hidden");
+        statusText.textContent = "Reading motivations & grades…";
+        showMotivationsSection();
+
+      } catch (err) {
+        statusEl.style.display = "none";
+        statusEl.classList.add("hidden");
+        document.getElementById("analyzeStatusText").textContent = "Reading motivations & grades…";
+        document.getElementById("analyzeBtn").classList.remove("hidden");
+        document.getElementById("manualToggle").classList.remove("hidden");
+        const errorEl = document.getElementById("analyzeError");
+        errorEl.textContent = err.message;
+        errorEl.classList.remove("hidden");
+      }
+    }
+
+    function compressImage(file) {
+      return new Promise((resolve, reject) => {
+        const MAX_W = 1920, MAX_H = 1080, MAX_BYTES = 4 * 1024 * 1024;
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = e => {
+          const img = new Image();
+          img.onerror = reject;
+          img.onload = () => {
+            let w = img.width, h = img.height;
+            if (w > MAX_W || h > MAX_H) {
+              const ratio = Math.min(MAX_W / w, MAX_H / h);
+              w = Math.round(w * ratio);
+              h = Math.round(h * ratio);
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = w; canvas.height = h;
+            canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+
+            let quality = 0.85;
+            let dataUrl;
+            do {
+              dataUrl = canvas.toDataURL("image/jpeg", quality);
+              quality = Math.round((quality - 0.1) * 100) / 100;
+            } while (dataUrl.length * 0.75 > MAX_BYTES && quality > 0.1);
+
+            resolve(dataUrl.split(",")[1]);
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // ── Manual mode ────────────────────────────────────────────────
+    function showManualEntry() {
+      isManualMode = true;
+      document.getElementById("manualToggle").classList.add("hidden");
+      showMotivationsSection();
+    }
+
+    // ── Dealbreaker visibility ─────────────────────────────────────
+    function updateDealbreakerVisibility() {
+      const greenCount = MOTIVATIONS.filter(m => motivationState[m] === "green").length;
+      const wrap = document.getElementById("dealbreakerSelectWrap");
+      if (greenCount >= 3) {
+        wrap.style.display = "none";
+        dealbreaker = "";
+        dbSelect.value = "";
+      } else {
+        wrap.style.display = "";
+      }
+    }
+
+    // ── Motivation grid ────────────────────────────────────────────
+    function showMotivationsSection() {
+      currentStep = 2;
+      updateProgressBar();
+      document.getElementById("motivationsSection").classList.remove("hidden");
+      renderMotivationGrid();
+      document.getElementById("dealbreakerSection").classList.remove("hidden");
+      updateDealbreakerVisibility();
+    }
+
+    function renderMotivationGrid() {
+      const grid = document.getElementById("motivationGrid");
+      grid.innerHTML = "";
+      MOTIVATIONS.forEach(m => grid.appendChild(buildMotivationRow(m)));
+    }
+
+    function cycleStatus(name) {
+      if (dealbreaker === name) return;
+      const cycle = { green: "red", red: "neutral", neutral: "green" };
+      motivationState[name] = cycle[motivationState[name]] || "green";
+      const existing = document.getElementById(`row-${name.replace(/\s+/g, '-')}`);
+      if (existing) existing.replaceWith(buildMotivationRow(name));
+      updateDealbreakerVisibility();
+    }
+
+    function adjustGrade(m, dir) {
+      const idx = GRADE_OPTIONS.indexOf(motivationGrades[m]);
+      if (dir === 1) {
+        if (idx === -1) motivationGrades[m] = GRADE_OPTIONS[0];
+        else if (idx < GRADE_OPTIONS.length - 1) motivationGrades[m] = GRADE_OPTIONS[idx + 1];
+      } else {
+        if (idx <= 0) motivationGrades[m] = "";
+        else motivationGrades[m] = GRADE_OPTIONS[idx - 1];
+      }
+      const existing = document.getElementById(`row-${m.replace(/\s+/g, '-')}`);
+      if (existing) existing.replaceWith(buildMotivationRow(m));
+    }
+
+    function gradeColor(grade) {
+      if (["A+","A","A-"].includes(grade))       return "#4eb205";
+      if (["B+","B","B-"].includes(grade))       return "#f4c625";
+      if (["C+","C","C-"].includes(grade))       return "#d75a06";
+      if (["D+","D","D-","F"].includes(grade))   return "#aa2516";
+      return "#999";
+    }
+
+    function gradeTextColor(grade) {
+      return ["B+","B","B-"].includes(grade) ? "#111" : "#fff";
+    }
+
+    function buildMotivationRow(m) {
+      const state = motivationState[m];
+      const grade = motivationGrades[m];
+      const isDB  = dealbreaker === m;
+
+      const wrap = document.createElement("div");
+      wrap.id = `row-${m.replace(/\s+/g, '-')}`;
+      wrap.className = `mot-row ${state}`;
+      if (!isDB) wrap.onclick = () => cycleStatus(m);
+
+      // Status pill (visual indicator only)
+      const pill = document.createElement("div");
+      pill.className = `mot-pill ${state}`;
+      wrap.appendChild(pill);
+
+      // Motivation label
+      const label = document.createElement("span");
+      label.style.cssText = `flex:1; font-size:14px; font-weight:${state === "red" ? "700" : "400"};`;
+      label.textContent = m + (isDB ? " 🔒" : "");
+      wrap.appendChild(label);
+
+      // Grade badge + stepper
+      const gradeWrap = document.createElement("div");
+      gradeWrap.style.cssText = "display:flex; align-items:center; gap:6px; flex-shrink:0;";
+
+      const badge = document.createElement("div");
+      badge.className = "grade-badge";
+      badge.textContent = grade || "—";
+      badge.style.background = gradeColor(grade);
+      badge.style.color = gradeTextColor(grade);
+      gradeWrap.appendChild(badge);
+
+      const stepperWrap = document.createElement("div");
+      stepperWrap.style.cssText = "display:flex; flex-direction:column; gap:4px;";
+
+      const upBtn = document.createElement("button");
+      upBtn.className = "grade-step";
+      upBtn.textContent = "▲";
+      upBtn.onclick = (e) => { e.stopPropagation(); adjustGrade(m, 1); };
+
+      const downBtn = document.createElement("button");
+      downBtn.className = "grade-step";
+      downBtn.textContent = "▼";
+      downBtn.onclick = (e) => { e.stopPropagation(); adjustGrade(m, -1); };
+
+      stepperWrap.appendChild(upBtn);
+      stepperWrap.appendChild(downBtn);
+      gradeWrap.appendChild(stepperWrap);
+
+      wrap.appendChild(gradeWrap);
+
+      return wrap;
+    }
+
+    // ── Dealbreaker ────────────────────────────────────────────────
+    dbSelect.onchange = function() {
+      dealbreaker = this.value;
+      if (dealbreaker) motivationState[dealbreaker] = "green";
+      if (!document.getElementById("motivationsSection").classList.contains("hidden")) {
+        renderMotivationGrid();
+      }
+    };
+
+    // ── Reset ──────────────────────────────────────────────────────
+    function resetAll() {
+      currentStep = 1;
+      updateProgressBar();
+      MOTIVATIONS.forEach(m => { motivationState[m] = "neutral"; motivationGrades[m] = ""; });
+      dealbreaker = "";
+      dbSelect.value = "";
+      isManualMode = false;
+      renderMotivationGrid();
+      document.getElementById("resultSection").classList.add("hidden");
+    }
+
+    function resetToStart() {
+      resetAll();
+      uploadedFile = null;
+      document.getElementById("previewWrap").classList.add("hidden");
+      document.getElementById("previewImg").src = "";
+      document.getElementById("analyzeBtn").classList.add("hidden");
+      document.getElementById("manualToggle").classList.add("hidden");
+      document.getElementById("analyzeStatus").classList.add("hidden");
+      document.getElementById("motivationsSection").classList.add("hidden");
+      document.getElementById("dealbreakerSection").classList.add("hidden");
+      document.getElementById("fileInput").value = "";
+      document.getElementById("cameraInput").value = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // ── Recommendation ─────────────────────────────────────────────
+    function pitchGradeTotal(pitch) {
+      return pitch.motivations.reduce((sum, m) => sum + (GRADE_VALUES[motivationGrades[m]] || 0), 0);
+    }
+
+    function findSwayCandidate() {
+      for (const pitch of PITCHES) {
+        const greensInPitch = pitch.motivations.filter(m => motivationState[m] === "green");
+        const redsInPitch   = pitch.motivations.filter(m => motivationState[m] === "red");
+        if (greensInPitch.length !== 2 || redsInPitch.length !== 1) continue;
+        const greenTotal = greensInPitch.reduce((sum, m) => sum + (GRADE_VALUES[motivationGrades[m]] || 0), 0);
+        if (greenTotal >= 14) return { pitch, redMotivation: redsInPitch[0], greenTotal };
+      }
+      return null;
+    }
+
+    function calculateRecommendation() {
+      const greensNow = MOTIVATIONS.filter(m => motivationState[m] === "green");
+      if (greensNow.length < 3) {
+        const db = document.getElementById("dealbreaker").value;
+        if (!db) { alert("Please select the recruit's dealbreaker motivation."); return; }
+      }
+
+      const greens   = MOTIVATIONS.filter(m => motivationState[m] === "green");
+      const reds     = new Set(MOTIVATIONS.filter(m => motivationState[m] === "red"));
+      const greenSet = new Set(greens);
+
+      const validPitches = PITCHES.filter(pitch => {
+        const ps = new Set(pitch.motivations);
+        for (const g of greenSet) { if (!ps.has(g)) return false; }
+        for (const r of reds)     { if (ps.has(r))  return false; }
+        return true;
+      });
+
+      if (validPitches.length > 0 && validPitches.length <= 2) {
+        const needed  = new Set(validPitches.flatMap(p => p.motivations));
+        const missing = [...needed].filter(m => !motivationGrades[m]);
+        if (missing.length > 0) {
+          alert("Missing grades for: " + missing.join(", ") + "\n\nCheck that Claude read the grades correctly, or switch to manual entry.");
+          return;
+        }
+      }
+
+      renderResult(validPitches);
+    }
+
+    function renderResult(validPitches) {
+      currentStep = 3;
+      updateProgressBar();
+
+      const section = document.getElementById("resultSection");
+      section.classList.remove("hidden");
+
+      let headline, subline = "", note, sendThePitches = null;
+
+      if (validPitches.length === 0) {
+        headline = "No Valid Pitch";
+        note = "No pitch fits this recruit's profile. Double-check the motivations above.";
+
+      } else if (validPitches.length >= 3) {
+        headline = "Send the House";
+        note = "Too many possible pitches to narrow it down.";
+        sendThePitches = validPitches;
+
+      } else if (validPitches.length === 1) {
+        const total = pitchGradeTotal(validPitches[0]);
+        if (total >= 20) {
+          headline = "Hard Sell";
+          subline  = validPitches[0].name;
+          note     = "We've identified your pitch.";
+        } else {
+          const sway = findSwayCandidate();
+          if (sway) {
+            headline = "Sway";
+            subline  = sway.pitch.name;
+            note     = `Consider using Sway on ${sway.pitch.name}. If you can flip <strong>${sway.redMotivation}</strong> from red to green, this pitch becomes viable for a Hard Sell.`;
+          } else {
+            headline = "Send the House";
+            note     = "Your grades aren't strong enough to Hard Sell.";
+            sendThePitches = validPitches;
+          }
+        }
+
+      } else {
+        const total0 = pitchGradeTotal(validPitches[0]);
+        const total1 = pitchGradeTotal(validPitches[1]);
+        if (total0 >= 20 && total1 >= 20) {
+          headline = "Double Soft Sell";
+          subline  = `${validPitches[0].name} & ${validPitches[1].name}`;
+          note     = "We've identified two potential pitches. You'll find out which one is correct next week.";
+        } else {
+          headline = "Send the House";
+          note     = "Your grades aren't strong enough to Soft Sell.";
+          sendThePitches = validPitches;
+        }
+      }
+
+      const pitchListHTML = sendThePitches ? `
+        <div style="margin-top:20px; padding:0 20px; text-align:left;">
+          <div style="font-size:11px; font-weight:600; color:#888; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:4px;">Pitches still in play</div>
+          ${sendThePitches.map(p => `
+            <div style="padding:12px 0; border-top:1px solid rgba(255,255,255,0.1);">
+              <div style="font-size:15px; color:#ffffff; font-weight:600;">${p.name}</div>
+              <div style="font-size:13px; color:#bbbbbb; line-height:1.6;">${p.motivations.join(', ')}</div>
+            </div>
+          `).join('')}
+        </div>` : "";
+
+      section.innerHTML = `
+        <div class="result-card">
+          <div class="result-label" style="text-align:center;">Your move</div>
+          <div class="result-headline" style="text-align:center;">${headline}</div>
+          ${subline ? `<div class="result-subline" style="text-align:center;">${subline}</div>` : ""}
+          <div class="result-note" style="text-align:center;">${note}</div>
+          ${pitchListHTML}
+          <button onclick="resetToStart()" style="display:block; width:100%; background:#fff; color:#111; font-weight:700; font-size:14px; padding:13px 16px; border-radius:6px; border:none; cursor:pointer; margin-top:20px;">
+            Try Another Recruit
+          </button>
+        </div>
+      `;
+
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  </script>
+
+</body>
+</html>
